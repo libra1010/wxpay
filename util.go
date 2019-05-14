@@ -3,41 +3,88 @@ package wxpay
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"encoding/pem"
 	"encoding/xml"
 	"golang.org/x/crypto/pkcs12"
+	"io"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func XmlToMap(xmlStr string) Params {
+// ToJSON 转化成JSON字符
+func (p Params) ToJSON() string {
+	mjson, _ := json.Marshal(p)
+	return string(mjson)
+}
 
-	params := make(Params)
-	decoder := xml.NewDecoder(strings.NewReader(xmlStr))
-
+// Decode XML解码
+func Decode(r io.Reader) Params {
 	var (
-		key   string
-		value string
+		d      *xml.Decoder
+		start  *xml.StartElement
+		params Params
 	)
-
-	for t, err := decoder.Token(); err == nil; t, err = decoder.Token() {
-		switch token := t.(type) {
-		case xml.StartElement: // 开始标签
-			key = token.Name.Local
-		case xml.CharData: // 标签内容
-			content := string([]byte(token))
-			value = content
+	d = xml.NewDecoder(r)
+	params = make(Params)
+	for {
+		tok, err := d.Token()
+		if err != nil {
+			break
 		}
-		if key != "xml" {
-			if value != "\n" {
-				params.SetString(key, value)
+		switch t := tok.(type) {
+		case xml.StartElement:
+			start = &t
+		case xml.CharData:
+			if t = bytes.TrimSpace(t); len(t) > 0 {
+				params.SetString(start.Name.Local, string(t))
 			}
 		}
 	}
-
 	return params
+}
+
+//// Encode XML编码
+//func Encode(params Params) io.Reader {
+//	var buf bytes.Buffer
+//	buf.WriteString(``)
+//	for k, v := range params {
+//		buf.WriteString(`<`)
+//		buf.WriteString(k)
+//		buf.WriteString(`>`)
+//	}
+//	buf.WriteString(``)
+//	return &buf
+//}
+
+func XmlToMap(xmlStr string) Params {
+	return Decode(strings.NewReader(xmlStr))
+	//params := make(Params)
+	//decoder := xml.NewDecoder(strings.NewReader(xmlStr))
+	//
+	//var (
+	//	key   string
+	//	value string
+	//)
+	//
+	//for t, err := decoder.Token(); err == nil; t, err = decoder.Token() {
+	//	switch token := t.(type) {
+	//	case xml.StartElement: // 开始标签
+	//		key = token.Name.Local
+	//	case xml.CharData: // 标签内容
+	//		content := string([]byte(token))
+	//		value = content
+	//	}
+	//	if key != "xml" {
+	//		if value != "\n" {
+	//			params.SetString(key, value)
+	//		}
+	//	}
+	//}
+	//
+	//return params
 }
 
 func MapToXml(params Params) string {
