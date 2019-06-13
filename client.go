@@ -23,6 +23,10 @@ type Client struct {
 	httpReadTimeoutMs    int      // 读取超时时间
 }
 
+var tr = &http.Transport{
+	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+}
+
 // 创建微信支付客户端
 func NewClient(account *Account) *Client {
 	return &Client{
@@ -61,7 +65,7 @@ func (c *Client) fillRequestData(params Params) Params {
 
 // https no cert post
 func (c *Client) postWithoutCert(url string, params Params) (string, error) {
-	h := &http.Client{}
+	h := &http.Client{Transport: tr}
 	p := c.fillRequestData(params)
 	response, err := h.Post(url, bodyType, strings.NewReader(MapToXml(p)))
 	if err != nil {
@@ -85,7 +89,8 @@ func (c *Client) postWithCert(url string, params Params) (string, error) {
 	cert := pkcs12ToPem(c.account.certData, c.account.mchID)
 
 	config := &tls.Config{
-		Certificates: []tls.Certificate{cert},
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
 	}
 	transport := &http.Transport{
 		TLSClientConfig:    config,
