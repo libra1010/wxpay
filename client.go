@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -379,6 +380,7 @@ func (c *Client) ShortUrl(params Params) (Params, error) {
 
 // 授权码查询OPENID接口
 func (c *Client) AuthCodeToOpenid(params Params) (Params, error) {
+
 	var url string
 	if c.account.isSandbox {
 		url = SandboxAuthCodeToOpenidUrl
@@ -390,4 +392,54 @@ func (c *Client) AuthCodeToOpenid(params Params) (Params, error) {
 		return nil, err
 	}
 	return c.processResponseXml(xmlStr)
+}
+
+//添加分账账户
+func (c *Client) ProfitSharingAddReceiver(params Params) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxProfitSharingAddUrl
+	} else {
+		url = ProfitSharingAddUrl
+	}
+	result, err := c.postWithoutCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	para := make(Params)
+	unmarshal := json.Unmarshal([]byte(result), &para)
+	if unmarshal != nil {
+		return c.processResponseXml(result)
+	}
+	return para, err
+}
+
+//多次分账
+func (c *Client) MultiProfitSharing(params Params) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxMultiProfitSharingUrl
+	} else {
+		url = MultiProfitSharingUrl
+	}
+	xml, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXml(xml)
+}
+
+//单次分账
+func (c *Client) ProfitSharing(params Params) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxProfitSharingUrl
+	} else {
+		url = ProfitSharingUrl
+	}
+	xml, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXml(xml)
 }
