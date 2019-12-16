@@ -160,9 +160,11 @@ func (c *Client) Sign(params Params) string {
 		str        string
 	)
 
+	signStr := buf.String()
+
 	switch c.signType {
 	case MD5:
-		dataMd5 = md5.Sum(buf.Bytes())
+		dataMd5 = md5.Sum([]byte(signStr))
 		str = hex.EncodeToString(dataMd5[:]) //需转换成切片
 	case HMACSHA256:
 		h := hmac.New(sha256.New, []byte(c.account.apiKey))
