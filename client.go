@@ -445,3 +445,18 @@ func (c *Client) ProfitSharing(params Params) (Params, error) {
 	}
 	return c.processResponseXml(xml)
 }
+
+//完结分账
+func (c *Client) ProfitSharingFinish(params Params) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxProfitSharingFinishUrl
+	} else {
+		url = ProfitSharingFinishUrl
+	}
+	xml, err := c.postWithCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXml(xml)
+}
